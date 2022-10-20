@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32922.545
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CrossSync.Entity.Abstractions", "CrossSync.Entity.Abstractions\CrossSync.Entity.Abstractions.csproj", "{3C343AD2-7387-4E72-8234-F90A761BC60E}"
 EndProject
@@ -47,9 +47,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EF.Migration.Tools", "EF.Migration.Tools\EF.Migration.Tools.csproj", "{80ED03DF-00E5-444D-8CD0-A5F84725E0D8}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Sample.TodoList.Entities.Shared\Sample.TodoList.Entities.Shared.projitems*{5668925c-2f7d-4677-9f2d-18af18c96471}*SharedItemsImports = 13
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -130,5 +127,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FDC9DC22-90CA-4599-A513-ABA5B62281C5}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Sample.TodoList.Entities.Shared\Sample.TodoList.Entities.Shared.projitems*{5668925c-2f7d-4677-9f2d-18af18c96471}*SharedItemsImports = 13
+		Sample.TodoList.Entities.Shared\Sample.TodoList.Entities.Shared.projitems*{b240a4b9-0158-4c9e-94c8-ffdd905078ab}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

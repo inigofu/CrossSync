@@ -49,7 +49,7 @@ namespace Sample.TodoList.Entities.Shared
       base.OnConfiguring(optionsBuilder);
 
 #if SERVER
-      optionsBuilder.UseSqlServer(options.Value.SqlConnectionString);
+      optionsBuilder.UseInMemoryDatabase("TodoList");
 #else
       optionsBuilder.UseSqlite($"FileName={System.IO.Path.Combine(path, "data.db")}");
 #endif
