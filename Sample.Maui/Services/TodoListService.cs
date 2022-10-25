@@ -14,12 +14,12 @@ namespace Sample.Maui.Services
     {
         private readonly IUnitOfWork<TodoListContext> unitOfWork;
 
-        public TodoListService(IUnitOfWork<TodoListContext> unitOfWork, IConnectivityService connectivityService, Lazy<IErrorService> errorService, SyncConfiguration config) : base(unitOfWork, connectivityService, errorService, config)
+        public TodoListService(IUnitOfWork<TodoListContext> unitOfWork, IConnectivityService connectivityService,SyncConfiguration config,IHttpsClientHandlerService handler) : base(unitOfWork, connectivityService, config,handler)
         {
             this.unitOfWork = unitOfWork;
         }
 
-        public override string ApiUri => "api/todolist";
+        public override string ApiUri => "TodoList";
 
         public override int Order => 100;
 

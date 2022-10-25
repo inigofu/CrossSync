@@ -32,6 +32,7 @@ namespace Sample.TodoList.Entities.Shared
     public TodoListContext(string path)
     {
       this.path = path;
+            this.Database.EnsureCreated();
     }
 #endif
 
@@ -51,7 +52,7 @@ namespace Sample.TodoList.Entities.Shared
 #if SERVER
       optionsBuilder.UseInMemoryDatabase("TodoList");
 #else
-      optionsBuilder.UseSqlite($"FileName={System.IO.Path.Combine(path, "data.db")}");
+      optionsBuilder.UseSqlite($"FileName={path}");
 #endif
     }
   }

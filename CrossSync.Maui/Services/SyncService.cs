@@ -26,23 +26,26 @@ namespace CrossSync.Xamarin.Services
   {
     private readonly IUnitOfWork uof;
     private readonly IConnectivityService connectivityService;
-    private readonly Lazy<IErrorService> errorService;
+    //private readonly Lazy<IErrorService> errorService;
     private readonly SyncConfiguration configuration;
     protected readonly IClientContext context;
     private DateTime lastSync = DateTime.MinValue;
+        private IHttpsClientHandlerService handler;
+
 
     /// <summary>
     /// ctor
     /// </summary>
     /// <param name="uof"></param>
-    public SyncService(IUnitOfWork<IClientContext> uof, IConnectivityService connectivityService, Lazy<IErrorService> errorService, SyncConfiguration configuration)
+    public SyncService(IUnitOfWork<IClientContext> uof, IConnectivityService connectivityService, SyncConfiguration configuration, IHttpsClientHandlerService handler)
     {
       this.uof = uof;
       this.connectivityService = connectivityService;
-      this.errorService = errorService;
+      //this.errorService = errorService;
       this.configuration = configuration;
       this.context = uof.Context;
       Set = context.Set<T>();
+            this.handler = handler;
 
     }
 
@@ -123,13 +126,13 @@ namespace CrossSync.Xamarin.Services
       }
       if (!Debugger.IsAttached && !await connectivityService.IsRemoteReachable(configuration.ApiBaseUrl))
       {
-        errorService.Value.ShowError($"Server not available ({configuration.ApiBaseUrl})");
+        Debug.WriteLine($"Server not available ({configuration.ApiBaseUrl})");
         return;
       }
 
       if (Preferences.ContainsKey($"{typeof(T).Name}.LastSynchroDate"))
       {
-                object date = Preferences.Get($"{typeof(T).Name}.LastSynchroDate","");
+                object date = Preferences.Get($"{typeof(T).Name}.LastSynchroDate",DateTime.MinValue);
         Debug.WriteLine($"Last sync done : {date}");
         lastSync = DateTime.Parse(date.ToString());
       }
@@ -175,7 +178,7 @@ namespace CrossSync.Xamarin.Services
         }
         else
         {
-          errorService.Value.ShowError("L'enregistrement n'a pas été enregistré car il n'était pas a jour.");
+          Debug.WriteLine("L'enregistrement n'a pas été enregistré car il n'était pas a jour.");
           //throw new SyncConflictVersionException<T>(value, existing);
         }
         return existing;
@@ -206,13 +209,30 @@ namespace CrossSync.Xamarin.Services
       Debug.WriteLine("DeleteAsync");
       try
       {
-        using (var client = new HttpClient
-        {
-          BaseAddress = new Uri(configuration.ApiBaseUrl),
-          Timeout = new TimeSpan(0, 0, 5)
-        })
-        {
-          var response = await client.GetAsync(new Uri(new Uri(configuration.TombstoneUri, UriKind.Relative), typeof(T).Name));
+                //HttpsClientHandlerService handler = new HttpsClientHandlerService();
+                using (
+
+#if DEBUG
+            
+                
+                var client = new HttpClient(handler.GetPlatformMessageHandler())
+                {
+                    BaseAddress = new Uri(configuration.ApiBaseUrl),
+                    Timeout = new TimeSpan(0, 0, 30),
+                    
+                }
+#else
+            var client = new HttpClient()
+                {
+                    BaseAddress = new Uri(configuration.ApiBaseUrl),
+                    Timeout = new TimeSpan(0, 0, 30),
+                    
+                }
+#endif
+
+                )
+                {
+          var response = await client.GetAsync(new Uri(configuration.TombstoneUri + "/" + typeof(T).Name, UriKind.Relative));
           response.EnsureSuccessStatusCode();
 
           var deletedRecords = JsonConvert.DeserializeObject<IEnumerable<DeletedEntity>>(await response.Content.ReadAsStringAsync());
@@ -245,94 +265,110 @@ namespace CrossSync.Xamarin.Services
     private async Task PushAsync()
     {
       Debug.WriteLine("PushAsync");
-      using (var client = new HttpClient
-      {
-        BaseAddress = new Uri(configuration.ApiBaseUrl),
-        Timeout = new TimeSpan(0, 0, 5)
-      })
-      {
-        var operations = context.Operations.Where(f => f.DataType == typeof(T).Name).OrderBy(f => f.UpdatedAt).ToList();
-        var ids = operations.Where(f => f.Status != EntityState.Deleted).Select(f => f.EntityId).ToList();
-        IEnumerable<T> items = (await GetAllAsync(f => ids.Contains(f.Id))).ToList();
+            using (
 
-        Debug.WriteLine($"{operations.Count} opérations a envoyer");
+#if DEBUG
 
-        foreach (var operation in operations)
-        {
-          Debug.WriteLine($"{operations.IndexOf(operation) + 1} : Commencée");
-          HttpResponseMessage response = null;
-          var item = operation.Status != EntityState.Deleted ? items.FirstOrDefault(f => f.Id == operation.EntityId) : null;
-          T freshEntity = null;
-          if (operation.Status == EntityState.Deleted || item != null)
-          {
-            try
+
+                      var client = new HttpClient(handler.GetPlatformMessageHandler())
+                      {
+                          BaseAddress = new Uri(configuration.ApiBaseUrl),
+                          Timeout = new TimeSpan(0, 0, 30),
+
+                      }
+#else
+            var client = new HttpClient()
+                {
+                    BaseAddress = new Uri(configuration.ApiBaseUrl),
+                    Timeout = new TimeSpan(0, 0, 30),
+                    
+                }
+#endif
+      )
             {
-              switch (operation.Status)
-              {
-                case EntityState.Deleted:
-                  response = await client.DeleteAsync($"{ApiUri}/{operation.EntityId}");
-                  response.EnsureSuccessStatusCode();
-                  break;
-                case EntityState.Modified:
-                  response = await client.PutAsync($"{ApiUri}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
-                  if (!response.IsSuccessStatusCode)
-                  {
-                    if (response.StatusCode == HttpStatusCode.Conflict)
+                var operations = context.Operations.Where(f => f.DataType == typeof(T).Name).ToList();
+                operations = operations.OrderBy(f => f.UpdatedAt).ToList();
+                var ids = operations.Where(f => f.Status != EntityState.Deleted).Select(f => f.EntityId).ToList();
+                IEnumerable<T> items = (await GetAllAsync(f => ids.Contains(f.Id))).ToList();
+
+                Debug.WriteLine($"{operations.Count} opérations a envoyer");
+
+                foreach (var operation in operations)
+                {
+                    Debug.WriteLine($"{operations.IndexOf(operation) + 1} : Commencée");
+                    HttpResponseMessage response = null;
+                    var item = operation.Status != EntityState.Deleted ? items.FirstOrDefault(f => f.Id == operation.EntityId) : null;
+                    T freshEntity = null;
+                    if (operation.Status == EntityState.Deleted || item != null)
                     {
-                      var serverValue = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
-
-                      if (this is IConflictHandler<T> conflictHandler)
-                      {
-                        freshEntity = (await conflictHandler.HandleConflict(item, serverValue));
-                        if (freshEntity == item)
+                        try
                         {
-                          freshEntity.Version = serverValue.Version;
-                          response = await client.PutAsync($"{ApiUri}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
-                          response.EnsureSuccessStatusCode();
+                            switch (operation.Status)
+                            {
+                                case EntityState.Deleted:
+                                    response = await client.DeleteAsync($"{ApiUri}/{operation.EntityId}");
+                                    response.EnsureSuccessStatusCode();
+                                    break;
+                                case EntityState.Modified:
+                                    response = await client.PutAsync($"{ApiUri}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
+                                    if (!response.IsSuccessStatusCode)
+                                    {
+                                        if (response.StatusCode == HttpStatusCode.Conflict)
+                                        {
+                                            var serverValue = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+
+                                            if (this is IConflictHandler<T> conflictHandler)
+                                            {
+                                                freshEntity = (await conflictHandler.HandleConflict(item, serverValue));
+                                                if (freshEntity == item)
+                                                {
+                                                    freshEntity.Version = serverValue.Version;
+                                                    response = await client.PutAsync($"{ApiUri}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
+                                                    response.EnsureSuccessStatusCode();
+                                                }
+                                            }
+                                            else
+                                            {
+                                                freshEntity = serverValue;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        freshEntity = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+                                    }
+
+                                    break;
+                                case EntityState.Added:
+                                    response = await client.PostAsync(ApiUri, new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
+                                    response.EnsureSuccessStatusCode();
+                                    freshEntity = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
-                      }
-                      else
-                      {
-                        freshEntity = serverValue;
-                      }
+                        catch (Exception e)
+                        {
+                            Debug.WriteLine(e.Message);
+                            continue;
+                        }
                     }
-                  }
-                  else
-                  {
-                    freshEntity = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
-                  }
 
-                  break;
-                case EntityState.Added:
-                  response = await client.PostAsync(ApiUri, new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
-                  response.EnsureSuccessStatusCode();
-                  freshEntity = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
-                  break;
-                default:
-                  break;
-              }
-            }
-            catch (Exception e)
-            {
-              Debug.WriteLine(e.Message);
-              continue;
-            }
-          }
+                    context.Operations.Remove(operation);
+                    if (operation.Status == EntityState.Added || operation.Status == EntityState.Modified)
+                    {
+                        if (response != null)
+                        {
+                            context.Entry(item).CurrentValues.SetValues(freshEntity);
+                            await CompleteUpdateAsync(item, freshEntity);
+                        }
+                    }
+                    await context.CommitAsync(true);
 
-          context.Operations.Remove(operation);
-          if (operation.Status == EntityState.Added || operation.Status == EntityState.Modified)
-          {
-            if (response != null)
-            {
-              context.Entry(item).CurrentValues.SetValues(freshEntity);
-              await CompleteUpdateAsync(item, freshEntity);
+                    Debug.WriteLine($"{operations.IndexOf(operation) + 1} : Terminée");
+                }
             }
-          }
-          await context.CommitAsync(true);
-
-          Debug.WriteLine($"{operations.IndexOf(operation) + 1} : Terminée");
-        }
-      }
     }
 
     private async Task PullAsync()
@@ -340,20 +376,35 @@ namespace CrossSync.Xamarin.Services
       Debug.WriteLine("PullAsync");
       try
       {
-        using (var client = new HttpClient
-        {
-          BaseAddress = new Uri(configuration.ApiBaseUrl),
-          Timeout = new TimeSpan(0, 0, 5)
-        })
-        {
+                using (
+
+#if DEBUG
+
+
+                              var client = new HttpClient(handler.GetPlatformMessageHandler())
+                              {
+                                  BaseAddress = new Uri(configuration.ApiBaseUrl),
+                                  Timeout = new TimeSpan(0, 0, 30),
+
+                              }
+#else
+            var client = new HttpClient()
+                {
+                    BaseAddress = new Uri(configuration.ApiBaseUrl),
+                    Timeout = new TimeSpan(0, 0, 30),
+                    
+                }
+#endif
+              )
+                {
           var response = await client.GetAsync(ApiUri + "?from=" + WebUtility.UrlEncode(lastSync.ToString()));
           response.EnsureSuccessStatusCode();
 
           var items = JsonConvert.DeserializeObject<IEnumerable<T>>(await response.Content.ReadAsStringAsync());
-          var ids = items.Select(f => new { f.Id, f.Version });
-          var entities = await GetAllAsync(f => ids.Any(g => g.Id == f.Id));
-          var idsToUpdate = entities.Select(f => f.Id).ToList();
-          var pendingOperations = context.Operations.Where(f => idsToUpdate.Contains(f.EntityId));
+          var ids = items.Select(f => f.Id );
+          var entities = await GetAllAsync(f => ids.Contains(f.Id));
+          var idsToUpdate = entities.ToList();
+          var pendingOperations = context.Operations.Where(f => idsToUpdate.Any(g=>g.Id==f.EntityId));
 
           Debug.WriteLine($"{items.Count()} éléments a récupérer");
 
@@ -392,7 +443,7 @@ namespace CrossSync.Xamarin.Services
           }
 
           var itemsToAdd = items.Except(entities, new IdComparer());
-          if (itemsToAdd.Any())
+          if (itemsToAdd.Count()>0)
           {
             await UpdateForeignKeys(itemsToAdd);
             await (context as DbContext).AddRangeAsync(itemsToAdd);

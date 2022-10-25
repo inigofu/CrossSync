@@ -9,11 +9,7 @@
             Padding="30,0"
             VerticalOptions="Center">
 
-            <Image
-                Source="dotnet_bot.png"
-                SemanticProperties.Description="Cute dot net bot waving hi to you!"
-                HeightRequest="200"
-                HorizontalOptions="Center" />
+            
 
             <Label
                 Text="Hello, World!"
@@ -34,6 +30,47 @@
                 SemanticProperties.Hint="Counts the number of times you click"
                 Clicked="OnCounterClicked"
                 HorizontalOptions="Center" />
+            <ListView x:Name="lista" HeightRequest="400" HasUnevenRows="True" IsPullToRefreshEnabled="True" SeparatorColor="Gray" SeparatorVisibility="Default">
+                <ListView.Header>
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Label Text="Nom" Grid.Column="3"/>
+                    </Grid>
+                </ListView.Header>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell>
+                            
+                                <Grid ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto"/>
+                                </Grid.RowDefinitions>
+                                <StackLayout>
+                                    <Label Text="{Binding Name}" FontSize="Large" VerticalOptions="Center" />
+                                </StackLayout>
+                                <ListView Grid.Row="1" ItemsSource="{Binding Items}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <ViewCell>
+                                                <HorizontalStackLayout>
+                                                    <Label Text="Task: "/>
+                                                    <Label Text="{Binding Task}"></Label>
+                                                </HorizontalStackLayout>
+                                            </ViewCell>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
 
         </VerticalStackLayout>
     </ScrollView>
