@@ -10,7 +10,7 @@ namespace Sample.Maui
     {
         public static MauiApp CreateMauiApp()
         {
-            SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
+            //SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
@@ -39,7 +39,11 @@ namespace Sample.Maui
         }
         public static class Constants
         {
+#if ANDROID
             public static string ApiBaseUrl => "https://10.0.2.2:7113/";
+#else
+public static string ApiBaseUrl => "https://localhost:7113/";
+#endif
             public static string DeleteApiUri => "api/tombstone";
         }
     }

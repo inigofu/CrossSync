@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
@@ -397,7 +398,7 @@ namespace CrossSync.Xamarin.Services
 #endif
               )
                 {
-          var response = await client.GetAsync(ApiUri + "?from=" + WebUtility.UrlEncode(lastSync.ToString()));
+          var response = await client.GetAsync(ApiUri + "?from=" + WebUtility.UrlEncode(lastSync.ToString(CultureInfo.InvariantCulture)));
           response.EnsureSuccessStatusCode();
 
           var items = JsonConvert.DeserializeObject<IEnumerable<T>>(await response.Content.ReadAsStringAsync());

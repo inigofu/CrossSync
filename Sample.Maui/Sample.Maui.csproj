@@ -39,9 +39,6 @@
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
-		<MauiImage Update="Resources\Images\dotnet_bot.svg" BaseSize="168,208" />
-
-		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
@@ -51,12 +48,20 @@
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.10" />
 	</ItemGroup>
-
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) =='maccatalyst' ">
+        <PackageReference Include="SQLitePCLRaw.core" Version="2.1.2" />
+        <PackageReference Include="SQLitePCLRaw.provider.sqlite3" Version="2.1.2" />
+        <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.2" />
+        <PackageReference Include="SQLitePCLRaw.provider.dynamic_cdecl" Version="2.1.2" />
+    </ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\CrossSync.Maui\CrossSync.Maui.csproj" />
 	  <ProjectReference Include="..\CrossSync.Xamarin.DependencyInjection\CrossSync.Xamarin.DependencyInjection.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Remove="SQLitePCLRaw.bundle_e_sqlite3" />
+	</ItemGroup>
 	<Import Project="..\Sample.TodoList.Entities.Shared\Sample.TodoList.Entities.Shared.projitems" Label="Shared" />
 
 	<ProjectExtensions><VisualStudio><UserProperties XamarinHotReloadDebuggerTimeoutExceptionSampleMauiHideInfoBar="True" /></VisualStudio></ProjectExtensions>
