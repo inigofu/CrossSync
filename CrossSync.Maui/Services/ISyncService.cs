@@ -39,12 +39,13 @@ namespace CrossSync.Xamarin.Services
     /// <returns></returns>
     Task<IQueryable<T>> GetAllAsync(Expression<Func<T, bool>> predicate = null);
 
-    /// <summary>
-    /// Returns the entity by ID
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    Task<T> GetAsync(Guid id);
+        /// <summary>
+        /// Returns the entity by ID
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="getfromservet"></param>
+        /// <returns></returns>
+        Task<T> GetAsync(Guid id, bool getfromservet = false);
 
     /// <summary>
     /// Updates the entity

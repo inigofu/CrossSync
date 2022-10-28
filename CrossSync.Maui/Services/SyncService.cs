@@ -19,208 +19,246 @@ using Newtonsoft.Json;
 
 namespace CrossSync.Xamarin.Services
 {
-  /// <summary>
-  /// Base synchronization service implementation
-  /// </summary>
-  /// <typeparam name="T"></typeparam>
-  public abstract class SyncService<T> : IMobileSyncService<T>, ISyncService where T : class, IVersionableEntity, new()
-  {
-    private readonly IUnitOfWork uof;
-    private readonly IConnectivityService connectivityService;
-    //private readonly Lazy<IErrorService> errorService;
-    private readonly SyncConfiguration configuration;
-    protected readonly IClientContext context;
-    private DateTime lastSync = DateTime.MinValue;
+    /// <summary>
+    /// Base synchronization service implementation
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public abstract class SyncService<T> : IMobileSyncService<T>, ISyncService where T : class, IVersionableEntity, new()
+    {
+        private readonly IUnitOfWork uof;
+        private readonly IConnectivityService connectivityService;
+        //private readonly Lazy<IErrorService> errorService;
+        private readonly SyncConfiguration configuration;
+        protected readonly IClientContext context;
+        private DateTime lastSync = DateTime.MinValue;
         private IHttpsClientHandlerService handler;
 
 
-    /// <summary>
-    /// ctor
-    /// </summary>
-    /// <param name="uof"></param>
-    public SyncService(IUnitOfWork<IClientContext> uof, IConnectivityService connectivityService, SyncConfiguration configuration, IHttpsClientHandlerService handler)
-    {
-      this.uof = uof;
-      this.connectivityService = connectivityService;
-      //this.errorService = errorService;
-      this.configuration = configuration;
-      this.context = uof.Context;
-      Set = context.Set<T>();
+        /// <summary>
+        /// ctor
+        /// </summary>
+        /// <param name="uof"></param>
+        public SyncService(IUnitOfWork<IClientContext> uof, IConnectivityService connectivityService, SyncConfiguration configuration, IHttpsClientHandlerService handler)
+        {
+            this.uof = uof;
+            this.connectivityService = connectivityService;
+            //this.errorService = errorService;
+            this.configuration = configuration;
+            this.context = uof.Context;
+            Set = context.Set<T>();
             this.handler = handler;
 
-    }
-
-    /// <summary>
-    /// Order
-    /// </summary>
-    public abstract int Order { get; }
-
-    /// <summary>
-    /// Gets the Entity DbSet
-    /// </summary>
-    public DbSet<T> Set { get; }
-
-    /// <summary>
-    /// Gets the Api URI (eg. "api/customer")
-    /// </summary>
-    public abstract string ApiUri { get; }
-
-    /// <summary>
-    /// Adds an entity
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <returns></returns>
-    public async Task<T> AddAsync(T entity)
-    {
-      await Set.AddAsync(entity);
-      await context.CommitAsync();
-      return entity;
-    }
-
-    /// <summary>
-    /// Deletes an entity
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <returns></returns>
-    public async Task DeleteAsync(T entity)
-    {
-      Set.Remove(entity);
-      await context.CommitAsync();
-    }
-
-    /// <summary>
-    /// Queries all entities
-    /// </summary>
-    /// <param name="predicate">Predicate to filter the query</param>
-    /// <returns></returns>
-    public virtual Task<IQueryable<T>> GetAllAsync(Expression<Func<T, bool>> predicate = null)
-    {
-      if (predicate != null)
-      {
-        return Task.FromResult(Includes(Set).Where(predicate));
-      }
-
-      return Task.FromResult(Includes(Set));
-    }
-
-    /// <summary>
-    /// Returns the entity by ID
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    public virtual async Task<T> GetAsync(Guid id)
-    {
-      return await Includes(Set).FirstOrDefaultAsync(f => f.Id == id);
-    }
-
-    /// <summary>
-    /// Sync
-    /// </summary>
-    /// <returns></returns>
-    public async Task SyncAsync()
-    {
-      Debug.WriteLine($"Synchro de : {typeof(T).Name}");
-
-      if (!Debugger.IsAttached && !connectivityService.IsConnected)
-      {
-        return;
-      }
-      if (!Debugger.IsAttached && !await connectivityService.IsRemoteReachable(configuration.ApiBaseUrl))
-      {
-        Debug.WriteLine($"Server not available ({configuration.ApiBaseUrl})");
-        return;
-      }
-
-      if (Preferences.ContainsKey($"{typeof(T).Name}.LastSynchroDate"))
-      {
-                object date = Preferences.Get($"{typeof(T).Name}.LastSynchroDate",DateTime.MinValue);
-        Debug.WriteLine($"Last sync done : {date}");
-        lastSync = DateTime.Parse(date.ToString());
-      }
-      else
-      {
-        lastSync = DateTime.MinValue;
-      }
-
-      var nowSyncDate = DateTime.Now;
-
-      await PushAsync();
-
-      await PullAsync();
-
-            Preferences.Set($"{typeof(T).Name}.LastSynchroDate",nowSyncDate);
-
-     
-    }
-
-    /// <summary>
-    /// Includes
-    /// </summary>
-    protected virtual Func<IQueryable<T>, IQueryable<T>> Includes { get; } = f => f;
-
-    /// <summary>
-    /// Updates the entity
-    /// </summary>
-    /// <param name="id"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public async Task<T> UpdateAsync(Guid id, T value)
-    {
-      var existing = await GetAsync(id);
-      if (existing != null)
-      {
-        if (existing.Version == value.Version)
-        {
-          context.Entry(existing).CurrentValues.SetValues(value);
-
-          await CompleteUpdateAsync(existing, value);
-
-          await context.CommitAsync();
         }
-        else
+
+        /// <summary>
+        /// Order
+        /// </summary>
+        public abstract int Order { get; }
+
+        /// <summary>
+        /// Gets the Entity DbSet
+        /// </summary>
+        public DbSet<T> Set { get; }
+
+        /// <summary>
+        /// Gets the Api URI (eg. "api/customer")
+        /// </summary>
+        public abstract string ApiUri { get; }
+
+        /// <summary>
+        /// Adds an entity
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public async Task<T> AddAsync(T entity)
         {
-          Debug.WriteLine("L'enregistrement n'a pas été enregistré car il n'était pas a jour.");
-          //throw new SyncConflictVersionException<T>(value, existing);
+            await Set.AddAsync(entity);
+            await context.CommitAsync();
+            return entity;
         }
-        return existing;
-      }
-      else
-      {
-        return await AddAsync(value);
-      }
-    }
 
-    /// <summary>
-    /// Completes the update
-    /// </summary>
-    /// <param name="entity">Entity to update</param>
-    /// <param name="values">New value entity</param>
-    /// <returns></returns>
-    public virtual Task CompleteUpdateAsync(T existing, T value)
-    {
-      return Task.FromResult(0);
-    }
+        /// <summary>
+        /// Deletes an entity
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public async Task DeleteAsync(T entity)
+        {
+            Set.Remove(entity);
+            await context.CommitAsync();
+        }
 
-    /// <summary>
-    /// Sync deleted
-    /// </summary>
-    /// <returns></returns>
-    public async Task SyncDeletedAsync()
-    {
-      Debug.WriteLine("DeleteAsync");
-      try
-      {
+        /// <summary>
+        /// Queries all entities
+        /// </summary>
+        /// <param name="predicate">Predicate to filter the query</param>
+        /// <returns></returns>
+        public virtual Task<IQueryable<T>> GetAllAsync(Expression<Func<T, bool>> predicate = null)
+        {
+            if (predicate != null)
+            {
+                return Task.FromResult(Includes(Set).Where(predicate));
+            }
+
+            return Task.FromResult(Includes(Set));
+        }
+
+        /// <summary>
+        /// Returns the entity by ID
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="getfromservet"></param>
+        /// <returns></returns>
+        public virtual async Task<T> GetAsync(Guid id, bool getfromservet = false)
+        {
+
+            if (getfromservet)
+            {
+                try
+                {
+                    using (
+
+#if DEBUG
+                                  var client = new HttpClient(handler.GetPlatformMessageHandler())
+                                  {
+                                      BaseAddress = new Uri(configuration.ApiBaseUrl),
+                                      Timeout = new TimeSpan(0, 0, 30),
+                                  }
+#else
+            var client = new HttpClient()
+                {
+                    BaseAddress = new Uri(configuration.ApiBaseUrl),
+                    Timeout = new TimeSpan(0, 0, 30),
+                }
+#endif
+                  )
+                    {
+                        var response = await client.GetAsync(ApiUri + "/" + id);
+                        response.EnsureSuccessStatusCode();
+
+                        var item = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+                        return item;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Exception en GetAsync : {ex.Message}");
+                    Debug.WriteLine($"Exception en GetAsync inner : {ex.InnerException}");
+                    Debug.WriteLine($"{ex.StackTrace}");
+                    return null;
+                }
+            }
+            return await Includes(Set).FirstOrDefaultAsync(f => f.Id == id);
+        }
+
+        /// <summary>
+        /// Sync
+        /// </summary>
+        /// <returns></returns>
+        public async Task SyncAsync()
+        {
+            Debug.WriteLine($"Synchro de : {typeof(T).Name}");
+
+            if (!Debugger.IsAttached && !connectivityService.IsConnected)
+            {
+                return;
+            }
+            if (!Debugger.IsAttached && !await connectivityService.IsRemoteReachable(configuration.ApiBaseUrl))
+            {
+                Debug.WriteLine($"Server not available ({configuration.ApiBaseUrl})");
+                return;
+            }
+
+            if (Preferences.ContainsKey($"{typeof(T).Name}.LastSynchroDate"))
+            {
+                object date = Preferences.Get($"{typeof(T).Name}.LastSynchroDate", DateTime.MinValue);
+                Debug.WriteLine($"Last sync done : {date}");
+                lastSync = DateTime.Parse(date.ToString());
+            }
+            else
+            {
+                lastSync = DateTime.MinValue;
+            }
+
+            var nowSyncDate = DateTime.Now;
+
+            await PushAsync();
+
+            await PullAsync();
+
+            Preferences.Set($"{typeof(T).Name}.LastSynchroDate", nowSyncDate);
+
+
+        }
+
+        /// <summary>
+        /// Includes
+        /// </summary>
+        protected virtual Func<IQueryable<T>, IQueryable<T>> Includes { get; } = f => f;
+
+        /// <summary>
+        /// Updates the entity
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public async Task<T> UpdateAsync(Guid id, T value)
+        {
+            var existing = await GetAsync(id);
+            if (existing != null)
+            {
+                if (existing.Version == value.Version)
+                {
+                    context.Entry(existing).CurrentValues.SetValues(value);
+
+                    await CompleteUpdateAsync(existing, value);
+
+                    await context.CommitAsync();
+                }
+                else
+                {
+                    Debug.WriteLine("L'enregistrement n'a pas été enregistré car il n'était pas a jour.");
+                    //throw new SyncConflictVersionException<T>(value, existing);
+                }
+                return existing;
+            }
+            else
+            {
+                return await AddAsync(value);
+            }
+        }
+
+        /// <summary>
+        /// Completes the update
+        /// </summary>
+        /// <param name="entity">Entity to update</param>
+        /// <param name="values">New value entity</param>
+        /// <returns></returns>
+        public virtual Task CompleteUpdateAsync(T existing, T value)
+        {
+            return Task.FromResult(0);
+        }
+
+        /// <summary>
+        /// Sync deleted
+        /// </summary>
+        /// <returns></returns>
+        public async Task SyncDeletedAsync()
+        {
+            Debug.WriteLine("DeleteAsync");
+            try
+            {
                 //HttpsClientHandlerService handler = new HttpsClientHandlerService();
                 using (
 
 #if DEBUG
-            
-                
+
+
                 var client = new HttpClient(handler.GetPlatformMessageHandler())
                 {
                     BaseAddress = new Uri(configuration.ApiBaseUrl),
                     Timeout = new TimeSpan(0, 0, 30),
-                    
+
                 }
 #else
             var client = new HttpClient()
@@ -233,39 +271,39 @@ namespace CrossSync.Xamarin.Services
 
                 )
                 {
-          var response = await client.GetAsync(new Uri(configuration.TombstoneUri + "/" + typeof(T).Name, UriKind.Relative));
-          response.EnsureSuccessStatusCode();
+                    var response = await client.GetAsync(new Uri(configuration.TombstoneUri + "/" + typeof(T).Name, UriKind.Relative));
+                    response.EnsureSuccessStatusCode();
 
-          var deletedRecords = JsonConvert.DeserializeObject<IEnumerable<DeletedEntity>>(await response.Content.ReadAsStringAsync());
-          var deletedIds = deletedRecords.Select(f => f.EntityId).AsEnumerable();
+                    var deletedRecords = JsonConvert.DeserializeObject<IEnumerable<DeletedEntity>>(await response.Content.ReadAsStringAsync());
+                    var deletedIds = deletedRecords.Select(f => f.EntityId).AsEnumerable();
 
-          Debug.WriteLine($"{deletedIds.Count()} éléments a supprimer");
+                    Debug.WriteLine($"{deletedIds.Count()} éléments a supprimer");
 
-          var recordsToDelete = context.Set<T>().Where(f => deletedIds.Contains(f.Id)).AsEnumerable();
-          if (recordsToDelete.Any())
-          {
-            context.Set<T>().RemoveRange(recordsToDelete);
-            await context.CommitAsync();
-          }
-          var operationsToDelete = context.Operations.Where(f => deletedIds.Contains(f.EntityId)).AsEnumerable();
-          if (operationsToDelete.Any())
-          {
-            context.Operations.RemoveRange(operationsToDelete);
-            await context.CommitAsync();
-          }
+                    var recordsToDelete = context.Set<T>().Where(f => deletedIds.Contains(f.Id)).AsEnumerable();
+                    if (recordsToDelete.Any())
+                    {
+                        context.Set<T>().RemoveRange(recordsToDelete);
+                        await context.CommitAsync();
+                    }
+                    var operationsToDelete = context.Operations.Where(f => deletedIds.Contains(f.EntityId)).AsEnumerable();
+                    if (operationsToDelete.Any())
+                    {
+                        context.Operations.RemoveRange(operationsToDelete);
+                        await context.CommitAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception en suppression : {ex.Message}");
+                Debug.WriteLine($"Exception en suppression inner : {ex.InnerException}");
+                Debug.WriteLine($"{ex.StackTrace}");
+            }
         }
-      }
-      catch (Exception ex)
-      {
-        Debug.WriteLine($"Exception en suppression : {ex.Message}");
-        Debug.WriteLine($"Exception en suppression inner : {ex.InnerException}");
-        Debug.WriteLine($"{ex.StackTrace}");
-      }
-    }
 
-    private async Task PushAsync()
-    {
-      Debug.WriteLine("PushAsync");
+        private async Task PushAsync()
+        {
+            Debug.WriteLine("PushAsync");
             using (
 
 #if DEBUG
@@ -370,13 +408,13 @@ namespace CrossSync.Xamarin.Services
                     Debug.WriteLine($"{operations.IndexOf(operation) + 1} : Terminée");
                 }
             }
-    }
+        }
 
-    private async Task PullAsync()
-    {
-      Debug.WriteLine("PullAsync");
-      try
-      {
+        private async Task PullAsync()
+        {
+            Debug.WriteLine("PullAsync");
+            try
+            {
                 using (
 
 #if DEBUG
@@ -398,94 +436,94 @@ namespace CrossSync.Xamarin.Services
 #endif
               )
                 {
-          var response = await client.GetAsync(ApiUri + "?from=" + WebUtility.UrlEncode(lastSync.ToString(CultureInfo.InvariantCulture)));
-          response.EnsureSuccessStatusCode();
+                    var response = await client.GetAsync(ApiUri + "?from=" + WebUtility.UrlEncode(lastSync.ToString(CultureInfo.InvariantCulture)));
+                    response.EnsureSuccessStatusCode();
 
-          var items = JsonConvert.DeserializeObject<IEnumerable<T>>(await response.Content.ReadAsStringAsync());
-          var ids = items.Select(f => f.Id );
-          var entities = await GetAllAsync(f => ids.Contains(f.Id));
-          var idsToUpdate = entities.ToList();
-          var pendingOperations = context.Operations.Where(f => idsToUpdate.Any(g=>g.Id==f.EntityId));
+                    var items = JsonConvert.DeserializeObject<IEnumerable<T>>(await response.Content.ReadAsStringAsync());
+                    var ids = items.Select(f => f.Id);
+                    var entities = await GetAllAsync(f => ids.Contains(f.Id));
+                    var idsToUpdate = entities.ToList();
+                    var pendingOperations = context.Operations.Where(f => idsToUpdate.Any(g => g.Id == f.EntityId));
 
-          Debug.WriteLine($"{items.Count()} éléments a récupérer");
+                    Debug.WriteLine($"{items.Count()} éléments a récupérer");
 
-          foreach (var entity in entities)
-          {
-            var serverValue = items.FirstOrDefault(f => f.Id == entity.Id);
-            if (serverValue.Version == entity.Version)
-            {
-              continue;
+                    foreach (var entity in entities)
+                    {
+                        var serverValue = items.FirstOrDefault(f => f.Id == entity.Id);
+                        if (serverValue.Version == entity.Version)
+                        {
+                            continue;
+                        }
+
+                        var pendingOperation = pendingOperations.FirstOrDefault(f => f.EntityId == entity.Id);
+                        if (pendingOperation != null)
+                        {
+                            T resolvedEntity = serverValue;
+                            if (this is IConflictHandler<T> conflictHandler)
+                            {
+                                resolvedEntity = (await conflictHandler.HandleConflict(entity, serverValue));
+                                context.Operations.Remove(pendingOperation);
+                            }
+
+                            await UpdateAsync(entity.Id, resolvedEntity);
+                            context.Entry(entity).CurrentValues.SetValues(resolvedEntity);
+
+                            await CompleteUpdateAsync(entity, resolvedEntity);
+                            await UpdateForeignKeys(new[] { entity });
+                        }
+                        else
+                        {
+                            var newValuesEntity = items.First(f => f.Id == entity.Id);
+                            context.Entry(entity).CurrentValues.SetValues(newValuesEntity);
+
+                            await CompleteUpdateAsync(entity, newValuesEntity);
+                            await UpdateForeignKeys(new[] { entity });
+                        }
+                    }
+
+                    var itemsToAdd = items.Except(entities, new IdComparer());
+                    if (itemsToAdd.Count() > 0)
+                    {
+                        await UpdateForeignKeys(itemsToAdd);
+                        await (context as DbContext).AddRangeAsync(itemsToAdd);
+                    }
+
+                    await context.CommitAsync(true);
+                }
             }
-
-            var pendingOperation = pendingOperations.FirstOrDefault(f => f.EntityId == entity.Id);
-            if (pendingOperation != null)
+            catch (HttpRequestException ex)
             {
-              T resolvedEntity = serverValue;
-              if (this is IConflictHandler<T> conflictHandler)
-              {
-                resolvedEntity = (await conflictHandler.HandleConflict(entity, serverValue));
-                context.Operations.Remove(pendingOperation);
-              }
-
-              await UpdateAsync(entity.Id, resolvedEntity);
-              context.Entry(entity).CurrentValues.SetValues(resolvedEntity);
-
-              await CompleteUpdateAsync(entity, resolvedEntity);
-              await UpdateForeignKeys(new[] { entity });
+                Debug.WriteLine(ex);
             }
-            else
+            catch (Exception ex)
             {
-              var newValuesEntity = items.First(f => f.Id == entity.Id);
-              context.Entry(entity).CurrentValues.SetValues(newValuesEntity);
-
-              await CompleteUpdateAsync(entity, newValuesEntity);
-              await UpdateForeignKeys(new[] { entity });
+                Debug.WriteLine($"Exception en synchro : {ex.Message}");
+                Debug.WriteLine($"Exception en synchro inner : {ex.InnerException}");
+                Debug.WriteLine($"{ex.StackTrace}");
             }
-          }
-
-          var itemsToAdd = items.Except(entities, new IdComparer());
-          if (itemsToAdd.Count()>0)
-          {
-            await UpdateForeignKeys(itemsToAdd);
-            await (context as DbContext).AddRangeAsync(itemsToAdd);
-          }
-
-          await context.CommitAsync(true);
         }
-      }
-      catch (HttpRequestException ex)
-      {
-        Debug.WriteLine(ex);
-      }
-      catch (Exception ex)
-      {
-        Debug.WriteLine($"Exception en synchro : {ex.Message}");
-        Debug.WriteLine($"Exception en synchro inner : {ex.InnerException}");
-        Debug.WriteLine($"{ex.StackTrace}");
-      }
+
+        /// <summary>
+        /// Updates the foreign keys
+        /// </summary>
+        /// <param name="itemsToAdd"></param>
+        /// <returns></returns>
+        public virtual Task UpdateForeignKeys(IEnumerable<IIdentifiable> itemsToAdd)
+        {
+            return Task.FromResult(0);
+        }
     }
 
-    /// <summary>
-    /// Updates the foreign keys
-    /// </summary>
-    /// <param name="itemsToAdd"></param>
-    /// <returns></returns>
-    public virtual Task UpdateForeignKeys(IEnumerable<IIdentifiable> itemsToAdd)
+    class IdComparer : IEqualityComparer<IIdentifiable>
     {
-      return Task.FromResult(0);
-    }
-  }
+        public bool Equals(IIdentifiable x, IIdentifiable y)
+        {
+            return x.Id == y.Id;
+        }
 
-  class IdComparer : IEqualityComparer<IIdentifiable>
-  {
-    public bool Equals(IIdentifiable x, IIdentifiable y)
-    {
-      return x.Id == y.Id;
+        public int GetHashCode(IIdentifiable obj)
+        {
+            return obj != null ? obj.Id.GetHashCode() : 0;
+        }
     }
-
-    public int GetHashCode(IIdentifiable obj)
-    {
-      return obj != null ? obj.Id.GetHashCode() : 0;
-    }
-  }
 }

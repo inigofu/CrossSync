@@ -27,10 +27,10 @@ namespace CrossSync.AspNetCore.Api
     }
 
     [HttpGet]
-    public virtual async Task<IEnumerable<T>> Get(DateTimeOffset from) => Includes(await repository.GetAllAsync(f => f.UpdatedAt > from.UtcDateTime)).AsEnumerable();
+    public virtual async Task<IEnumerable<T>> Get(DateTimeOffset from) => IncludeAll(await repository.GetAllAsync(f => f.UpdatedAt > from.UtcDateTime)).AsEnumerable();
 
     [HttpGet("{id}")]
-    public virtual async Task<T> Get(Guid id) => await Includes(await repository.GetAllAsync()).FirstOrDefaultAsync(f => f.Id == id);
+    public virtual async Task<T> Get(Guid id) => await IncludeId(await repository.GetAllAsync()).FirstOrDefaultAsync(f => f.Id == id);
 
     [HttpPost]
     public virtual async Task<IActionResult> Post([FromBody]T value)
@@ -91,9 +91,13 @@ namespace CrossSync.AspNetCore.Api
       return Ok();
     }
 
-    protected virtual IQueryable<T> Includes(IQueryable<T> query)
+    protected virtual IQueryable<T> IncludeAll(IQueryable<T> query)
     {
       return query;
     }
-  }
+        protected virtual IQueryable<T> IncludeId(IQueryable<T> query)
+        {
+            return query;
+        }
+    }
 }
