@@ -9,5 +9,6 @@ namespace CrossSync.Xamarin.Services
     public interface IHttpsClientHandlerService
     {
         public HttpMessageHandler GetPlatformMessageHandler();
+        public string Token { get; }
     }
 }

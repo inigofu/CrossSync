@@ -12,5 +12,10 @@ namespace CrossSync.Entity
     /// This property should not be modified by clients application
     /// </summary>
     string Version { get; set; }
-  }
+        /// <summary>
+        /// Gets if the entity is trackable.
+        /// Usefull fore child entity which are not need to be tracked
+        /// </summary>
+         bool IsTrackable { get; set; }
+    }
 }

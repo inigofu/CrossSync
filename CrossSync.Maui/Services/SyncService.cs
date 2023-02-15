@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using CrossSync.Entity;
@@ -124,6 +125,7 @@ namespace CrossSync.Xamarin.Services
                                       BaseAddress = new Uri(configuration.ApiBaseUrl),
                                       Timeout = new TimeSpan(0, 0, 30),
                                   }
+                                  
 #else
             var client = new HttpClient()
                 {
@@ -133,6 +135,10 @@ namespace CrossSync.Xamarin.Services
 #endif
                   )
                     {
+                        if (!String.IsNullOrEmpty(handler.Token))
+                        {
+                            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
+                        }
                         var response = await client.GetAsync(ApiUri + "/" + id);
                         response.EnsureSuccessStatusCode();
 
@@ -271,6 +277,10 @@ namespace CrossSync.Xamarin.Services
 
                 )
                 {
+                    if (!String.IsNullOrEmpty(handler.Token))
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
+                    }
                     var response = await client.GetAsync(new Uri(configuration.TombstoneUri + "/" + typeof(T).Name, UriKind.Relative));
                     response.EnsureSuccessStatusCode();
 
@@ -325,6 +335,10 @@ namespace CrossSync.Xamarin.Services
 #endif
       )
             {
+                if (!String.IsNullOrEmpty(handler.Token))
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
+                }
                 var operations = context.Operations.Where(f => f.DataType == typeof(T).Name).ToList();
                 operations = operations.OrderBy(f => f.UpdatedAt).ToList();
                 var ids = operations.Where(f => f.Status != EntityState.Deleted).Select(f => f.EntityId).ToList();
@@ -436,6 +450,10 @@ namespace CrossSync.Xamarin.Services
 #endif
               )
                 {
+                    if (!String.IsNullOrEmpty(handler.Token))
+                    {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
+                    }
                     var response = await client.GetAsync(ApiUri + "?from=" + WebUtility.UrlEncode(lastSync.ToString(CultureInfo.InvariantCulture)));
                     response.EnsureSuccessStatusCode();
 

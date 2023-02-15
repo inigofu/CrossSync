@@ -34,10 +34,10 @@ namespace CrossSync.Infrastructure.Client
     /// <returns></returns>
     public async Task TrackEntities(IEnumerable<EntityEntry> entries)
     {
-      var entryIds = entries.Where(f => !f.Metadata.IsOwned() && f.Entity is IVersionableEntity).Select(f => f.GetEntityId<Guid>()).ToList();
+      var entryIds = entries.Where(f => !f.Metadata.IsOwned() && f.Entity is IVersionableEntity).Where(f=> ((IVersionableEntity)f.Entity).IsTrackable).Select(f => f.GetEntityId<Guid>()).ToList();
       var existingOperations = context.Operations.Where(f => entryIds.Contains(f.EntityId)).ToList();
 
-      foreach (var entry in entries.Where(f => !f.Metadata.IsOwned() && f.Entity is IVersionableEntity).ToList())
+      foreach (var entry in entries.Where(f => !f.Metadata.IsOwned() && f.Entity is IVersionableEntity ).Where(f => ((IVersionableEntity)f.Entity).IsTrackable).ToList())
       {
         var entityId = entry.GetEntityId<Guid>();
         if (entityId == Guid.Empty)
