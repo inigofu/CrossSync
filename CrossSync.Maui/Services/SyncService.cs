@@ -117,34 +117,13 @@ namespace CrossSync.Xamarin.Services
             {
                 try
                 {
-                    using (
-
-#if DEBUG
-                                  var client = new HttpClient(handler.GetPlatformMessageHandler())
-                                  {
-                                      BaseAddress = new Uri(configuration.ApiBaseUrl),
-                                      Timeout = new TimeSpan(0, 0, 30),
-                                  }
-                                  
-#else
-            var client = new HttpClient()
-                {
-                    BaseAddress = new Uri(configuration.ApiBaseUrl),
-                    Timeout = new TimeSpan(0, 0, 30),
-                }
-#endif
-                  )
-                    {
-                        if (!String.IsNullOrEmpty(handler.Token))
-                        {
-                            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
-                        }
-                        var response = await client.GetAsync(ApiUri + "/" + id);
+                    
+                        var response = await handler.Client.GetAsync(configuration.ApiBaseUrl + "/" + id);
                         response.EnsureSuccessStatusCode();
 
                         var item = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
                         return item;
-                    }
+                    
                 }
                 catch (Exception ex)
                 {
@@ -255,33 +234,9 @@ namespace CrossSync.Xamarin.Services
             try
             {
                 //HttpsClientHandlerService handler = new HttpsClientHandlerService();
-                using (
-
-#if DEBUG
-
-
-                var client = new HttpClient(handler.GetPlatformMessageHandler())
-                {
-                    BaseAddress = new Uri(configuration.ApiBaseUrl),
-                    Timeout = new TimeSpan(0, 0, 30),
-
-                }
-#else
-            var client = new HttpClient()
-                {
-                    BaseAddress = new Uri(configuration.ApiBaseUrl),
-                    Timeout = new TimeSpan(0, 0, 30),
+               
                     
-                }
-#endif
-
-                )
-                {
-                    if (!String.IsNullOrEmpty(handler.Token))
-                    {
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
-                    }
-                    var response = await client.GetAsync(new Uri(configuration.TombstoneUri + "/" + typeof(T).Name, UriKind.Relative));
+                    var response = await handler.Client.GetAsync(new Uri(configuration.ApiBaseUrl+"/"+configuration.TombstoneUri + "/" + typeof(T).Name, UriKind.Relative));
                     response.EnsureSuccessStatusCode();
 
                     var deletedRecords = JsonConvert.DeserializeObject<IEnumerable<DeletedEntity>>(await response.Content.ReadAsStringAsync());
@@ -301,7 +256,7 @@ namespace CrossSync.Xamarin.Services
                         context.Operations.RemoveRange(operationsToDelete);
                         await context.CommitAsync();
                     }
-                }
+                
             }
             catch (Exception ex)
             {
@@ -314,31 +269,8 @@ namespace CrossSync.Xamarin.Services
         private async Task PushAsync()
         {
             Debug.WriteLine("PushAsync");
-            using (
+        
 
-#if DEBUG
-
-
-                      var client = new HttpClient(handler.GetPlatformMessageHandler())
-                      {
-                          BaseAddress = new Uri(configuration.ApiBaseUrl),
-                          Timeout = new TimeSpan(0, 0, 30),
-
-                      }
-#else
-            var client = new HttpClient()
-                {
-                    BaseAddress = new Uri(configuration.ApiBaseUrl),
-                    Timeout = new TimeSpan(0, 0, 30),
-                    
-                }
-#endif
-      )
-            {
-                if (!String.IsNullOrEmpty(handler.Token))
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
-                }
                 var operations = context.Operations.Where(f => f.DataType == typeof(T).Name).ToList();
                 operations = operations.OrderBy(f => f.UpdatedAt).ToList();
                 var ids = operations.Where(f => f.Status != EntityState.Deleted).Select(f => f.EntityId).ToList();
@@ -359,11 +291,11 @@ namespace CrossSync.Xamarin.Services
                             switch (operation.Status)
                             {
                                 case EntityState.Deleted:
-                                    response = await client.DeleteAsync($"{ApiUri}/{operation.EntityId}");
+                                        response = await handler.Client.DeleteAsync($"{configuration.ApiBaseUrl}/{operation.EntityId}");
                                     response.EnsureSuccessStatusCode();
                                     break;
                                 case EntityState.Modified:
-                                    response = await client.PutAsync($"{ApiUri}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
+                                    response = await handler.Client.PutAsync($"{configuration.ApiBaseUrl}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
                                     if (!response.IsSuccessStatusCode)
                                     {
                                         if (response.StatusCode == HttpStatusCode.Conflict)
@@ -376,7 +308,7 @@ namespace CrossSync.Xamarin.Services
                                                 if (freshEntity == item)
                                                 {
                                                     freshEntity.Version = serverValue.Version;
-                                                    response = await client.PutAsync($"{ApiUri}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
+                                                    response = await handler.Client.PutAsync($"{configuration.ApiBaseUrl}/{operation.EntityId}", new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
                                                     response.EnsureSuccessStatusCode();
                                                 }
                                             }
@@ -393,7 +325,7 @@ namespace CrossSync.Xamarin.Services
 
                                     break;
                                 case EntityState.Added:
-                                    response = await client.PostAsync(ApiUri, new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
+                                    response = await handler.Client.PostAsync(configuration.ApiBaseUrl, new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
                                     response.EnsureSuccessStatusCode();
                                     freshEntity = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
                                     break;
@@ -421,7 +353,7 @@ namespace CrossSync.Xamarin.Services
 
                     Debug.WriteLine($"{operations.IndexOf(operation) + 1} : Terminée");
                 }
-            }
+            
         }
 
         private async Task PullAsync()
@@ -429,32 +361,8 @@ namespace CrossSync.Xamarin.Services
             Debug.WriteLine("PullAsync");
             try
             {
-                using (
-
-#if DEBUG
-
-
-                              var client = new HttpClient(handler.GetPlatformMessageHandler())
-                              {
-                                  BaseAddress = new Uri(configuration.ApiBaseUrl),
-                                  Timeout = new TimeSpan(0, 0, 30),
-
-                              }
-#else
-            var client = new HttpClient()
-                {
-                    BaseAddress = new Uri(configuration.ApiBaseUrl),
-                    Timeout = new TimeSpan(0, 0, 30),
-                    
-                }
-#endif
-              )
-                {
-                    if (!String.IsNullOrEmpty(handler.Token))
-                    {
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", handler.Token);
-                    }
-                    var response = await client.GetAsync(ApiUri + "?from=" + WebUtility.UrlEncode(lastSync.ToString(CultureInfo.InvariantCulture)));
+               
+                    var response = await handler.Client.GetAsync(configuration.ApiBaseUrl+ "?from=" + WebUtility.UrlEncode(lastSync.ToString(CultureInfo.InvariantCulture)));
                     response.EnsureSuccessStatusCode();
 
                     var items = JsonConvert.DeserializeObject<IEnumerable<T>>(await response.Content.ReadAsStringAsync());
@@ -507,7 +415,7 @@ namespace CrossSync.Xamarin.Services
                     }
 
                     await context.CommitAsync(true);
-                }
+                
             }
             catch (HttpRequestException ex)
             {
