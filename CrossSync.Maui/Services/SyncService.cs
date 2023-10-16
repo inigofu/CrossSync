@@ -17,6 +17,7 @@ using CrossSync.Entity.Abstractions.UnitOfWork;
 using CrossSync.Infrastructure.Client;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Sentry;
 
 namespace CrossSync.Xamarin.Services
 {
@@ -127,6 +128,7 @@ namespace CrossSync.Xamarin.Services
                 }
                 catch (Exception ex)
                 {
+                    SentrySdk.CaptureException(ex);
                     Debug.WriteLine($"Exception en GetAsync : {ex.Message}");
                     Debug.WriteLine($"Exception en GetAsync inner : {ex.InnerException}");
                     Debug.WriteLine($"{ex.StackTrace}");
@@ -260,6 +262,7 @@ namespace CrossSync.Xamarin.Services
             }
             catch (Exception ex)
             {
+                SentrySdk.CaptureException(ex);
                 Debug.WriteLine($"Exception en suppression : {ex.Message}");
                 Debug.WriteLine($"Exception en suppression inner : {ex.InnerException}");
                 Debug.WriteLine($"{ex.StackTrace}");
@@ -333,10 +336,11 @@ namespace CrossSync.Xamarin.Services
                                     break;
                             }
                         }
-                        catch (Exception e)
+                        catch (Exception ex)
                         {
-                            Debug.WriteLine(e.Message);
-                            continue;
+                            Debug.WriteLine(ex.Message);
+                        SentrySdk.CaptureException(ex);
+                        continue;
                         }
                     }
 
@@ -423,6 +427,8 @@ namespace CrossSync.Xamarin.Services
             }
             catch (Exception ex)
             {
+
+                SentrySdk.CaptureException(ex);
                 Debug.WriteLine($"Exception en synchro : {ex.Message}");
                 Debug.WriteLine($"Exception en synchro inner : {ex.InnerException}");
                 Debug.WriteLine($"{ex.StackTrace}");

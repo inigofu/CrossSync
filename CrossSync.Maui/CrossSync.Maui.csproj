@@ -20,8 +20,14 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0-ios|AnyCPU'">
 	  <CreatePackage>false</CreatePackage>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0-ios|AnyCPU'">
+	  <CreatePackage>false</CreatePackage>
+	</PropertyGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\CrossSync.Infrastructure.Client\CrossSync.Infrastructure.Client.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="Sentry.Maui" Version="3.40.1" />
+	</ItemGroup>
 </Project>
