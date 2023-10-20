@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CrossSync.Entity;
 using CrossSync.Entity.Abstractions;
+using CrossSync.Entity.Abstractions.Abstractions;
 using CrossSync.Entity.Abstractions.EF.UnitOfWork;
 using CrossSync.Entity.Abstractions.Entities;
 using CrossSync.Entity.Abstractions.UnitOfWork;
@@ -86,7 +87,14 @@ namespace CrossSync.Xamarin.Services
         /// <returns></returns>
         public async Task DeleteAsync(T entity)
         {
-            Set.Remove(entity);
+
+            var existingEntity = Set.FirstOrDefault(a => a.Id == entity.Id);
+            //if (existingEntity != null)
+            //{
+            //    context.Entry(existingEntity).State = EntityState.Detached;
+            //}
+            //context.Entry(entity).State = EntityState.Detached;
+            Set.Remove(existingEntity);
             await context.CommitAsync();
         }
 
@@ -238,7 +246,7 @@ namespace CrossSync.Xamarin.Services
                 //HttpsClientHandlerService handler = new HttpsClientHandlerService();
                
                     
-                    var response = await handler.Client.GetAsync(new Uri(configuration.ApiBaseUrl+"/"+configuration.TombstoneUri + "/" + typeof(T).Name, UriKind.Relative));
+                    var response = await handler.Client.GetAsync(new Uri(configuration.TombstoneUri + "/" + typeof(T).Name));
                     response.EnsureSuccessStatusCode();
 
                     var deletedRecords = JsonConvert.DeserializeObject<IEnumerable<DeletedEntity>>(await response.Content.ReadAsStringAsync());
