@@ -57,10 +57,12 @@ namespace CrossSync.AspNetCore.Api
 
       try
       {
-        var result = await repository.UpdateAsync(id, value);
-
-        await unitOfWork.CommitAsync();
-        return Accepted(result);
+                Console.WriteLine("SyncController Put before update: " + id);
+                var result = await repository.UpdateAsync(id, value);
+                Console.WriteLine("SyncController Put after update: " + id);
+                await unitOfWork.CommitAsync();
+                Console.WriteLine("SyncController Put after CommitAsync: " + id);
+                return Accepted(result);
       }
       catch (SyncConflictVersionException<T> e)
       {

@@ -5,6 +5,7 @@ using CrossSync.Entity.Abstractions.EF.UnitOfWork;
 using CrossSync.Entity;
 using MediatR;
 using Microsoft.EntityFrameworkCore.Storage;
+using System;
 
 namespace CrossSync.Infrastructure.Server.UnitOfWork
 {
@@ -52,7 +53,8 @@ namespace CrossSync.Infrastructure.Server.UnitOfWork
       var ctx = context;      
 
       var events = ctx.ChangeTracker.Entries().Select(f => f.Entity).OfType<INotifiableEntity>().SelectMany(f => f.DomainEvents);
-      if (events.Any())
+            Console.WriteLine("UnitOfWork CommitAsync modifiedOwned count: " + events.Count());
+            if (events.Any())
         await Task.WhenAll(events.Select(async (d) => await mediator.Publish(d)).ToList());
 
       await context.CommitAsync();

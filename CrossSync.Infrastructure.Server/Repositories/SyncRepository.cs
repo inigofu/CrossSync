@@ -91,7 +91,11 @@ namespace CrossSync.Entity.Server.Repositories
       {
         if (value.Version != null && existing.Version.SequenceEqual(value.Version))
         {
-          context.Entry(existing).CurrentValues.SetValues(value);
+                    DateTime now = DateTime.Now;
+                    long bNow = now.ToBinary();
+                    byte[] arrayNow = BitConverter.GetBytes(bNow);
+                    value.Version = arrayNow;
+                    context.Entry(existing).CurrentValues.SetValues(value);
         }
         else
         {
