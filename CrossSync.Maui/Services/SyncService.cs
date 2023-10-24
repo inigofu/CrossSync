@@ -381,7 +381,7 @@ namespace CrossSync.Xamarin.Services
                     var ids = items.Select(f => f.Id);
                     var entities = await GetAllAsync(f => ids.Contains(f.Id));
                     var idsToUpdate = entities.ToList();
-                    var pendingOperations = context.Operations.Where(f => idsToUpdate.Any(g => g.Id == f.EntityId));
+                    var pendingOperations = context.Operations.ToList().Where(f => idsToUpdate.Any(g => g.Id == f.EntityId)).ToList();
 
                     Debug.WriteLine($"{items.Count()} éléments a récupérer");
 
