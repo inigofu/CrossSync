@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,8 @@ namespace CrossSync.Entity.Abstractions
     public async Task<int> CommitAsync()
     {
       var modifiedOwned = ChangeTracker.Entries().Where(f => f.Metadata.IsOwned() && f.State == EntityState.Modified).ToList();
-
+            Console.WriteLine("CommitAsync ChangeTracker modified count: " + ChangeTracker.Entries().Where(f => f.State == EntityState.Modified).ToList().Count);
+            Console.WriteLine("CommitAsync modifiedOwned count: "+ modifiedOwned.Count);
       var modi = modifiedOwned.Select(f =>
       {
         var entries2 = ChangeTracker.Entries().Where(g => !g.Metadata.IsOwned());
@@ -33,8 +35,8 @@ namespace CrossSync.Entity.Abstractions
 
         return e;
       }).ToList();
-
-      foreach (var modified in modi)
+            Console.WriteLine("CommitAsync modi count: " + modi.Count);
+            foreach (var modified in modi)
         modified.State = EntityState.Modified;
 
       await Proxy.TrackEntities(ChangeTracker.Entries().Where(f => !f.Metadata.IsOwned() && (f.State == EntityState.Added || f.State == EntityState.Deleted || f.State == EntityState.Modified)));

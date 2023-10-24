@@ -20,7 +20,8 @@ namespace CrossSync.AspNetCore.Api
     [HttpGet("{entityType}")]
     public IEnumerable<DeletedEntity> Get(string entityType)
     {
-      return context.DeletedEntities.Where(f => f.DataType == entityType).AsEnumerable();
+
+            return context.DeletedEntities.Where(f => f.DataType == entityType).AsEnumerable();
     }
   }
 }

@@ -175,13 +175,13 @@ namespace CrossSync.Xamarin.Services
                 lastSync = DateTime.MinValue;
             }
 
-            var nowSyncDate = DateTime.Now;
+            var nowSyncDate = DateTimeOffset.UtcNow;
 
             await PushAsync();
 
             await PullAsync();
 
-            Preferences.Set($"{typeof(T).Name}.LastSynchroDate", nowSyncDate);
+            Preferences.Set($"{typeof(T).Name}.LastSynchroDate", nowSyncDate.DateTime);
 
 
         }

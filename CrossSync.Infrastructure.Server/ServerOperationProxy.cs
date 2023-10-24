@@ -27,7 +27,7 @@ namespace CrossSync.Infrastructure.Server
           if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
           {
             versionableEntity.UpdatedAt = DateTimeOffset.UtcNow;
-                        Console.WriteLine("updated datatype: " + entry.Entity.GetType().Name + " with ID: versionableEntity.Id" + " at: " + versionableEntity.UpdatedAt);
+                        Console.WriteLine("updated datatype: " + entry.Entity.GetType().Name + " with ID:" + versionableEntity.Id + " at: " + versionableEntity.UpdatedAt);
           }
           else if (entry.State == EntityState.Deleted)
           {
@@ -37,7 +37,7 @@ namespace CrossSync.Infrastructure.Server
               DeletedDate = DateTimeOffset.UtcNow,
               DataType = entry.Entity.GetType().Name
             });
-                        Console.WriteLine("deleted datatype: " + entry.Entity.GetType().Name + " with ID: versionableEntity.Id" + " at: " + DateTimeOffset.UtcNow);
+                        Console.WriteLine("deleted datatype: " + entry.Entity.GetType().Name + " with ID:" + versionableEntity.Id + " at: " + DateTimeOffset.UtcNow);
                     }
         }
       }
