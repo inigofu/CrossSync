@@ -32,12 +32,19 @@ namespace CrossSync.Entity.Abstractions.Services
     /// <returns></returns>
     Task<T> AddAsync(T entity);
 
-    /// <summary>
-    /// Deletes an entity
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <returns></returns>
-    Task DeleteAsync(T entity);
+        /// <summary>
+        /// Attachs an entity
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        T Attach(T entity);
+
+        /// <summary>
+        /// Deletes an entity
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        Task DeleteAsync(T entity);
 
     /// <summary>
     /// Updates an entity

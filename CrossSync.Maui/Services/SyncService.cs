@@ -337,7 +337,8 @@ namespace CrossSync.Xamarin.Services
                                     break;
                                 case EntityState.Added:
                                     response = await handler.Client.PostAsync(configuration.ApiBaseUrl, new StringContent(JsonConvert.SerializeObject(item), Encoding.UTF8, "application/json"));
-                                    response.EnsureSuccessStatusCode();
+                                var a = await response.Content.ReadAsStringAsync();
+                                response.EnsureSuccessStatusCode();
                                     freshEntity = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
                                     break;
                                 default:

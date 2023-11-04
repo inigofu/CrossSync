@@ -37,7 +37,8 @@ namespace CrossSync.AspNetCore.Api
     {
       if (!ModelState.IsValid)
       {
-        return BadRequest(ModelState);
+                
+                return BadRequest(ModelState);
       }
 
       var added = await repository.AddAsync(value);
@@ -47,12 +48,28 @@ namespace CrossSync.AspNetCore.Api
       return CreatedAtRoute(routeValues: new { id = added.Id }, value: added);
     }
 
-    [HttpPut("{id}")]
+        public virtual async Task<IActionResult> Attach([FromBody] T value)
+        {
+            if (!ModelState.IsValid)
+            {
+
+                return BadRequest(ModelState);
+            }
+
+            var added = repository.Attach(value);
+
+            await unitOfWork.CommitAsync();
+
+            return CreatedAtRoute(routeValues: new { id = added.Id }, value: added);
+        }
+
+        [HttpPut("{id}")]
     public virtual async Task<IActionResult> Put(Guid id, [FromBody]T value)
     {
       if (!ModelState.IsValid)
       {
-        return BadRequest(ModelState);
+              
+                return BadRequest(ModelState);
       }
 
       try

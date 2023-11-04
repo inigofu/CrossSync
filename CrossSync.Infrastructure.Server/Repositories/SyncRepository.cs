@@ -43,13 +43,25 @@ namespace CrossSync.Entity.Server.Repositories
       await Set.AddAsync(entity);
       return entity;
     }
+        /// <summary>
+        /// Attach an entity
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public  virtual  T Attach(T entity)
+        {
+            Set.Attach(entity);
+            context.Entry(entity).State= EntityState.Added;
+            return entity;
+        }
+        /// <summary>
+        /// Deletes an entity
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        ///
 
-    /// <summary>
-    /// Deletes an entity
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <returns></returns>
-    public virtual Task DeleteAsync(T entity)
+        public virtual Task DeleteAsync(T entity)
     {
       Set.Remove(entity);
       return Task.CompletedTask;
