@@ -18,7 +18,7 @@ namespace CrossSync.AspNetCore.Api
   public class SyncController<T> : Controller where T : class, IIdentifiable, IVersionableEntity, new()
   {
     private readonly IUnitOfWork unitOfWork;
-    private readonly ISyncRepository<T> repository;
+    protected readonly ISyncRepository<T> repository;
 
     public SyncController(IUnitOfWork unitOfWork, ISyncRepository<T> repository)
     {
