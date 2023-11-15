@@ -55,5 +55,8 @@ namespace CrossSync.Entity.Abstractions
       lf.AddProvider(new ContextLogger());
       optionsBuilder.UseLoggerFactory(lf);
     }
-  }
+        public BaseContext(DbContextOptions options) : base(options) { }
+  
+    public BaseContext()  { }
+}
 }

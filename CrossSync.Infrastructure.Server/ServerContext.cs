@@ -37,5 +37,10 @@ namespace CrossSync.Infrastructure.Server
       modelBuilder.Entity<DeletedEntity>().HasKey(f => f.Id);
       modelBuilder.Entity<DeletedEntity>().HasIndex(nameof(DeletedEntity.EntityId), nameof(DeletedEntity.DataType)).IsUnique();
     }
+
+       public ServerContext (DbContextOptions options):base(options)
+        {
+
+        }
   }
 }
