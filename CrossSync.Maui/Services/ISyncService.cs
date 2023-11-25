@@ -84,7 +84,7 @@ namespace CrossSync.Xamarin.Services
     int Order { get; }
 
     /// <summary>
-    /// Synchronizes added and modified entities and get latest. (Push & Pull)
+    /// Synchronizes added and modified entities and get latest. (Push Pull)
     /// </summary>
     /// <returns></returns>
     Task SyncAsync();

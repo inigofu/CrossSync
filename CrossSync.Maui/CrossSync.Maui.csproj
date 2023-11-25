@@ -32,7 +32,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Sentry.Maui" Version="3.40.1" />
+	  <PackageReference Include="Sentry.Maui" Version="3.41.2" />
 	  <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.3" />
 	</ItemGroup>
 </Project>

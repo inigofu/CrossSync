@@ -226,8 +226,8 @@ namespace CrossSync.Xamarin.Services
         /// <summary>
         /// Completes the update
         /// </summary>
-        /// <param name="entity">Entity to update</param>
-        /// <param name="values">New value entity</param>
+        /// <param name="existing">Entity to update</param>
+        /// <param name="value">New value entity</param>
         /// <returns></returns>
         public virtual Task CompleteUpdateAsync(T existing, T value)
         {
