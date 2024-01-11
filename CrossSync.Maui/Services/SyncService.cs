@@ -351,7 +351,7 @@ namespace CrossSync.Xamarin.Services
                         }
                     catch (HttpRequestException ex)
                     {
-                        Debug.WriteLine(ex);
+                        SentrySdk.CaptureException(ex);
                     }
                     catch (Exception ex)
                         {
