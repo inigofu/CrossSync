@@ -112,6 +112,20 @@ namespace CrossSync.Xamarin.Services
 
             return Task.FromResult(Includes(Set));
         }
+        /// <summary>
+        /// Queries all entities
+        /// </summary>
+        /// <param name="predicate">Predicate to filter the query</param>
+        /// <returns></returns>
+        public virtual Task<IQueryable<T>> GetAllWithOutIncludeAsync(Expression<Func<T, bool>> predicate = null)
+        {
+            if (predicate != null)
+            {
+                return Task.FromResult(Set.AsQueryable().Where(predicate));
+            }
+
+            return Task.FromResult(Set.AsQueryable());
+        }
 
         /// <summary>
         /// Returns the entity by ID
