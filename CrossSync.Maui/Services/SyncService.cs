@@ -378,7 +378,7 @@ namespace CrossSync.Xamarin.Services
                     context.Operations.Remove(operation);
                     if (operation.Status == EntityState.Added || operation.Status == EntityState.Modified)
                     {
-                        if (response != null)
+                        if (response != null && freshEntity!=null)
                         {
                             context.Entry(item).CurrentValues.SetValues(freshEntity);
                             await CompleteUpdateAsync(item, freshEntity);
