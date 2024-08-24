@@ -35,7 +35,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Sentry.Maui" Version="3.41.2" />
-	  <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.6" />
+	  <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+	  <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.40" />
+	  <PackageReference Include="Sentry" Version="4.9.0" />
+	  <PackageReference Include="Sentry.Maui" Version="4.9.0" />
 	</ItemGroup>
 </Project>
